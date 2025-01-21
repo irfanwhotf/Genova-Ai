@@ -1,101 +1,233 @@
-import Image from "next/image";
+'use client'
+
+import { useState } from 'react'
+import Image from 'next/image'
+import Link from 'next/link'
+
+const Navbar = () => (
+  <nav className="fixed top-0 left-0 right-0 z-50 bg-gray-900/80 backdrop-blur-sm">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="flex items-center justify-between h-16">
+        <div className="flex items-center">
+          <span className="text-2xl font-bold text-green-400">GenovaAI</span>
+        </div>
+        <div className="hidden md:block">
+          <div className="ml-10 flex items-baseline space-x-4">
+            <Link href="/" className="text-white hover:text-green-400 px-3 py-2">Home</Link>
+            <Link href="/about" className="text-white hover:text-green-400 px-3 py-2">About</Link>
+            <Link href="/contact" className="text-white hover:text-green-400 px-3 py-2">Contact</Link>
+          </div>
+        </div>
+      </div>
+    </div>
+  </nav>
+)
+
+const Footer = () => (
+  <footer className="bg-gray-900 text-white py-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="flex flex-col md:flex-row justify-between items-center">
+        <div className="text-center md:text-left mb-4 md:mb-0">
+          <p> 2025 GenovaAI. All rights reserved.</p>
+        </div>
+        <div className="flex space-x-6">
+          <Link href="https://twitter.com" className="hover:text-green-400">Twitter</Link>
+          <Link href="https://github.com" className="hover:text-green-400">GitHub</Link>
+          <Link href="https://linkedin.com" className="hover:text-green-400">LinkedIn</Link>
+        </div>
+      </div>
+    </div>
+  </footer>
+)
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const [prompt, setPrompt] = useState('')
+  const [model, setModel] = useState('Flux-Dev')
+  const [imageUrl, setImageUrl] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  const generateImage = async () => {
+    if (!prompt.trim()) {
+      setError('Please enter a prompt')
+      return
+    }
+
+    setLoading(true)
+    setError('')
+
+    try {
+      console.log('Sending request with prompt:', prompt)
+      const response = await fetch('/api/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          prompt: prompt.trim(),
+          model: 'Flux-Dev'
+        }),
+      })
+
+      const data = await response.json()
+      console.log('Response received:', data)
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to generate image')
+      }
+
+      if (!data.imageUrl) {
+        throw new Error('No image URL received from the API')
+      }
+
+      setImageUrl(data.imageUrl)
+    } catch (err) {
+      console.error('Error in generateImage:', err)
+      setError(err instanceof Error ? err.message : 'Failed to generate image')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const downloadImage = async () => {
+    if (!imageUrl) return
+    
+    try {
+      const response = await fetch(imageUrl)
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `genova-ai-${Date.now()}.png`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      window.URL.revokeObjectURL(url)
+    } catch (err) {
+      setError('Failed to download image')
+    }
+  }
+
+  return (
+    <>
+      <Navbar />
+      <main className="min-h-screen pt-16">
+        {/* Hero Section */}
+        <div className="relative bg-gray-900 overflow-hidden">
+          <div className="max-w-7xl mx-auto">
+            <div className="relative z-10 pb-8 sm:pb-16 md:pb-20 lg:max-w-2xl lg:w-full lg:pb-28 xl:pb-32">
+              <main className="mt-10 mx-auto max-w-7xl px-4 sm:mt-12 sm:px-6 md:mt-16 lg:mt-20 lg:px-8 xl:mt-28">
+                <div className="sm:text-center lg:text-left">
+                  <h1 className="text-4xl tracking-tight font-extrabold text-white sm:text-5xl md:text-6xl">
+                    <span className="block">Transform your ideas into</span>
+                    <span className="block text-green-400">stunning images with AI</span>
+                  </h1>
+                  <p className="mt-3 text-base text-gray-300 sm:mt-5 sm:text-lg sm:max-w-xl sm:mx-auto md:mt-5 md:text-xl lg:mx-0">
+                    Create beautiful, unique images with our state-of-the-art AI image generation technology.
+                    Just describe what you want to see, and watch the magic happen.
+                  </p>
+                  <div className="mt-5 sm:mt-8 sm:flex sm:justify-center lg:justify-start">
+                    <div className="rounded-md shadow">
+                      <button
+                        onClick={() => document.getElementById('generate-section')?.scrollIntoView({ behavior: 'smooth' })}
+                        className="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-white bg-green-500 hover:bg-green-400 md:py-4 md:text-lg md:px-10"
+                      >
+                        Start Generating
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </main>
+            </div>
+          </div>
+        </div>
+
+        {/* Generate Section */}
+        <div id="generate-section" className="py-12 bg-gray-800">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="lg:text-center">
+              <h2 className="text-3xl font-extrabold text-white sm:text-4xl">
+                Generate Your Image
+              </h2>
+              <p className="mt-4 max-w-2xl text-xl text-gray-300 lg:mx-auto">
+                Enter your prompt below and select your preferred model to generate an image.
+              </p>
+            </div>
+
+            <div className="mt-10">
+              <div className="space-y-4">
+                <textarea
+                  value={prompt}
+                  onChange={(e) => setPrompt(e.target.value)}
+                  placeholder="Describe the image you want to generate..."
+                  className="w-full px-4 py-2 rounded-lg bg-gray-700 border border-gray-600 text-white placeholder-gray-400 focus:border-green-400 focus:ring-1 focus:ring-green-400 outline-none transition-all resize-none h-32"
+                />
+                
+                <select
+                  value={model}
+                  onChange={(e) => setModel(e.target.value)}
+                  className="w-full px-4 py-2 rounded-lg bg-gray-700 border border-gray-600 text-white focus:border-green-400 focus:ring-1 focus:ring-green-400 outline-none transition-all"
+                >
+                  <option value="Flux-Dev">Flux-Dev</option>
+                </select>
+
+                <button
+                  onClick={generateImage}
+                  disabled={loading}
+                  className={`w-full px-6 py-3 rounded-lg bg-green-500 hover:bg-green-400 text-white font-medium transition-colors ${
+                    loading ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
+                >
+                  {loading ? 'Generating...' : 'Generate Image'}
+                </button>
+
+                {error && (
+                  <p className="text-red-400 text-center">{error}</p>
+                )}
+              </div>
+
+              {/* Result Section */}
+              {imageUrl && (
+                <div className="mt-8 space-y-4">
+                  <div className="relative aspect-square max-w-2xl mx-auto border-2 border-gray-700 rounded-lg overflow-hidden">
+                    <Image
+                      src={imageUrl}
+                      alt={prompt}
+                      fill
+                      className="object-contain"
+                      unoptimized
+                      onError={(e) => {
+                        console.error('Image loading error:', e)
+                        setError('Failed to load the generated image')
+                      }}
+                    />
+                  </div>
+                  <div className="flex justify-center gap-4">
+                    <button
+                      onClick={downloadImage}
+                      className="px-6 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-white font-medium transition-colors"
+                    >
+                      Download Image
+                    </button>
+                    <a
+                      href={imageUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-6 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-white font-medium transition-colors"
+                    >
+                      Open in New Tab
+                    </a>
+                  </div>
+                  <p className="text-center text-gray-400 mt-4">
+                    Prompt: {prompt}
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
-  );
+      <Footer />
+    </>
+  )
 }
