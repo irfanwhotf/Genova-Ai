@@ -48,11 +48,6 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null)
 
   const generateImage = async () => {
-    if (!prompt.trim()) {
-      setError('Please enter a prompt')
-      return
-    }
-
     try {
       setLoading(true)
       setError(null)
@@ -68,37 +63,45 @@ export default function Home() {
         body: JSON.stringify({ prompt }),
       })
 
-      console.log('Received response:', {
-        status: response.status,
-        ok: response.ok,
-        headers: Object.fromEntries(response.headers.entries())
-      })
+      console.log('Response status:', response.status)
+      console.log('Response headers:', Object.fromEntries(response.headers.entries()))
 
       const responseText = await response.text()
-      console.log('Response text:', responseText)
+      console.log('Raw response:', responseText)
 
       let data
       try {
         data = JSON.parse(responseText)
-        console.log('Parsed response data:', data)
+        console.log('Parsed response:', data)
       } catch (parseError) {
-        console.error('Failed to parse response:', responseText, parseError)
-        throw new Error('Invalid response from server')
+        console.error('Failed to parse response:', {
+          text: responseText,
+          error: parseError
+        })
+        throw new Error(`Invalid response from server: ${parseError.message}`)
       }
 
       if (!response.ok || !data.success) {
-        throw new Error(data.message || 'Failed to generate image')
+        console.error('API Error:', {
+          status: response.status,
+          data
+        })
+        throw new Error(data.message || `API error: ${response.status}`)
       }
 
       if (!data.imageUrl) {
-        console.error('Missing image URL in response:', data)
+        console.error('Missing image URL:', data)
         throw new Error('No image URL in response')
       }
 
-      console.log('Successfully received image URL:', data.imageUrl)
+      console.log('Setting image URL:', data.imageUrl)
       setImageUrl(data.imageUrl)
     } catch (error) {
-      console.error('Error generating image:', error)
+      console.error('Error details:', {
+        name: error.name,
+        message: error.message,
+        stack: error.stack
+      })
       setError(error instanceof Error ? error.message : 'Failed to generate image')
       setImageUrl(null)
     } finally {

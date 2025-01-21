@@ -1,6 +1,13 @@
 import { NextResponse } from 'next/server'
 
 export async function POST(request: Request) {
+  console.log('API Route Environment:', {
+    nodeEnv: process.env.NODE_ENV,
+    hasApiKey: !!process.env.NEXT_PUBLIC_API_KEY,
+    hasBaseUrl: !!process.env.NEXT_PUBLIC_API_BASE_URL,
+    baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL
+  })
+
   try {
     const { prompt } = await request.json()
 
@@ -18,7 +25,8 @@ export async function POST(request: Request) {
     if (!apiKey || !baseUrl) {
       console.error('Missing environment variables:', { 
         hasApiKey: !!apiKey, 
-        hasBaseUrl: !!baseUrl 
+        hasBaseUrl: !!baseUrl,
+        baseUrl: baseUrl
       })
       throw new Error('API configuration is missing')
     }
@@ -44,18 +52,38 @@ export async function POST(request: Request) {
         'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify(requestBody),
-    })
-
-    const responseData = await response.json()
-    console.log('API Response:', {
-      status: response.status,
-      data: responseData,
-      headers: Object.fromEntries(response.headers.entries())
+    }).catch(error => {
+      console.error('Fetch error:', {
+        message: error.message,
+        cause: error.cause,
+        stack: error.stack
+      })
+      throw error
     })
 
     if (!response.ok) {
-      throw new Error(responseData.message || responseData.error || `API responded with status ${response.status}`)
+      const errorText = await response.text()
+      console.error('API Error Response:', {
+        status: response.status,
+        headers: Object.fromEntries(response.headers.entries()),
+        body: errorText
+      })
+      let errorMessage = 'API request failed'
+      try {
+        const errorData = JSON.parse(errorText)
+        errorMessage = errorData.message || errorData.error || `API responded with status ${response.status}`
+      } catch (e) {
+        errorMessage = `API error: ${errorText}`
+      }
+      throw new Error(errorMessage)
     }
+
+    const responseData = await response.json()
+    console.log('API Success Response:', {
+      status: response.status,
+      headers: Object.fromEntries(response.headers.entries()),
+      data: responseData
+    })
 
     const imageUrl = responseData.data?.[0]?.url || 
                     responseData.data?.data?.[0]?.url ||
@@ -74,16 +102,18 @@ export async function POST(request: Request) {
       message: 'Image generated successfully'
     })
   } catch (error) {
-    console.error('Error in image generation:', error instanceof Error ? {
+    console.error('Error in image generation:', {
+      name: error.name,
       message: error.message,
-      stack: error.stack
-    } : error)
+      stack: error.stack,
+      cause: error.cause
+    })
     
     return NextResponse.json(
       { 
         success: false,
-        message: error instanceof Error ? error.message : 'Failed to generate image',
-        error: error instanceof Error ? error.stack : 'Unknown error'
+        message: error.message || 'Failed to generate image',
+        error: error.stack || 'Unknown error'
       },
       { status: 500 }
     )
