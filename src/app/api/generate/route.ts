@@ -1,15 +1,16 @@
 import { NextResponse } from 'next/server'
 
+interface ImageData {
+  url?: string
+  b64_json?: string
+}
+
+interface ApiResponseData {
+  data?: ImageData[]
+}
+
 interface ApiResponse {
-  data?: Array<{
-    url?: string
-    b64_json?: string
-  }> | {
-    data?: Array<{
-      url?: string
-      b64_json?: string
-    }>
-  }
+  data?: ImageData[] | ApiResponseData
 }
 
 export async function POST(request: Request) {
@@ -104,10 +105,14 @@ export async function POST(request: Request) {
       )
     }
 
-    // Extract image URL
-    const imageUrl = responseData.data?.[0]?.url || 
-                    responseData.data?.data?.[0]?.url ||
-                    responseData.data?.data?.[0]?.b64_json
+    // Extract image URL with proper type checking
+    let imageUrl: string | undefined
+    
+    if (Array.isArray(responseData.data)) {
+      imageUrl = responseData.data[0]?.url || responseData.data[0]?.b64_json
+    } else if (responseData.data?.data && Array.isArray(responseData.data.data)) {
+      imageUrl = responseData.data.data[0]?.url || responseData.data.data[0]?.b64_json
+    }
 
     if (!imageUrl) {
       console.error('Invalid API response structure:', responseData)
