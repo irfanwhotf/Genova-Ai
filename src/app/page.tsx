@@ -52,59 +52,39 @@ export default function Home() {
       setError(null)
       setImageUrl(null)
 
-      console.warn('Starting image generation with prompt:', prompt)
+      if (!prompt.trim()) {
+        setError('Please enter a prompt')
+        return
+      }
 
       const response = await fetch('/api/generate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ prompt }),
+        body: JSON.stringify({ prompt: prompt.trim() }),
       })
 
-      console.warn('Response status:', response.status)
-      console.warn('Response headers:', Object.fromEntries(response.headers.entries()))
-
-      const responseText = await response.text()
-      console.warn('Raw response:', responseText)
-
-      let data
-      try {
-        data = JSON.parse(responseText)
-        console.warn('Parsed response:', data)
-      } catch (parseError: unknown) {
-        const errorMessage = parseError instanceof Error ? parseError.message : 'Unknown parse error'
-        console.error('Failed to parse response:', {
-          text: responseText,
-          error: errorMessage
-        })
-        throw new Error(`Invalid response from server: ${errorMessage}`)
+      const contentType = response.headers.get('content-type')
+      if (!contentType?.includes('application/json')) {
+        console.error('Invalid content type:', contentType)
+        throw new Error('Server returned an invalid response')
       }
 
-      if (!response.ok || !data.success) {
-        console.error('API Error:', {
-          status: response.status,
-          data
-        })
-        throw new Error(data.message || `API error: ${response.status}`)
+      const data = await response.json()
+      
+      if (!data.success) {
+        throw new Error(data.message || 'Failed to generate image')
       }
 
       if (!data.imageUrl) {
-        console.error('Missing image URL:', data)
         throw new Error('No image URL in response')
       }
 
-      console.warn('Setting image URL:', data.imageUrl)
       setImageUrl(data.imageUrl)
-    } catch (error: unknown) {
-      const errorDetails = error instanceof Error ? {
-        name: error.name,
-        message: error.message,
-        stack: error.stack
-      } : { error }
-
-      console.error('Error details:', errorDetails)
-      setError(error instanceof Error ? error.message : 'Failed to generate image')
+    } catch (error) {
+      console.error('Error generating image:', error)
+      setError(error instanceof Error ? error.message : 'An unexpected error occurred')
       setImageUrl(null)
     } finally {
       setLoading(false)

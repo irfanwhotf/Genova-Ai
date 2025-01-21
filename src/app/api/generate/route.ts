@@ -1,70 +1,63 @@
 import { NextResponse } from 'next/server'
 
 export async function POST(request: Request) {
-  console.warn('API Route Environment:', {
-    nodeEnv: process.env.NODE_ENV,
-    hasApiKey: !!process.env.NEXT_PUBLIC_API_KEY,
-    hasBaseUrl: !!process.env.NEXT_PUBLIC_API_BASE_URL,
-    baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL
-  })
-
   try {
-    const { prompt } = await request.json()
-
-    if (!prompt) {
-      console.error('No prompt provided')
-      return NextResponse.json(
-        { success: false, message: 'Prompt is required' },
-        { status: 400 }
-      )
-    }
-
+    // Validate environment variables first
     const apiKey = process.env.NEXT_PUBLIC_API_KEY
     const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL
 
     if (!apiKey || !baseUrl) {
       console.error('Missing environment variables:', { 
         hasApiKey: !!apiKey, 
-        hasBaseUrl: !!baseUrl,
-        baseUrl: baseUrl
+        hasBaseUrl: !!baseUrl
       })
-      throw new Error('API configuration is missing')
+      return NextResponse.json(
+        { success: false, message: 'API configuration is missing' },
+        { status: 500 }
+      )
     }
 
-    const requestBody = {
-      prompt: prompt.trim(),
-      model: 'flux-dev',
-      n: 1,
-      size: '512x512',
-      response_format: 'url'
+    // Parse request body
+    let prompt: string
+    try {
+      const body = await request.json()
+      prompt = body.prompt?.trim()
+    } catch (error) {
+      return NextResponse.json(
+        { success: false, message: 'Invalid request body' },
+        { status: 400 }
+      )
+    }
+
+    if (!prompt) {
+      return NextResponse.json(
+        { success: false, message: 'Prompt is required' },
+        { status: 400 }
+      )
     }
 
     console.warn('Making API request:', {
       url: `${baseUrl}/images/generations`,
-      prompt: requestBody.prompt,
-      model: requestBody.model
+      prompt
     })
 
+    // Make API request
     const response = await fetch(`${baseUrl}/images/generations`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${apiKey}`,
       },
-      body: JSON.stringify(requestBody),
-    }).catch((fetchError: unknown) => {
-      if (fetchError instanceof Error) {
-        console.error('Fetch error:', {
-          message: fetchError.message,
-          cause: fetchError.cause,
-          stack: fetchError.stack
-        })
-      } else {
-        console.error('Unknown fetch error:', fetchError)
-      }
-      throw fetchError
+      body: JSON.stringify({
+        prompt,
+        model: 'flux-dev',
+        n: 1,
+        size: '512x512',
+        response_format: 'url'
+      }),
     })
 
+    // Handle non-OK responses
     if (!response.ok) {
       const errorText = await response.text()
       console.error('API Error Response:', {
@@ -72,55 +65,58 @@ export async function POST(request: Request) {
         headers: Object.fromEntries(response.headers.entries()),
         body: errorText
       })
-      let errorMessage = 'API request failed'
+
+      let errorMessage: string
       try {
         const errorData = JSON.parse(errorText)
-        errorMessage = errorData.message || errorData.error || `API responded with status ${response.status}`
-      } catch (_parseError) {
-        errorMessage = `API error: ${errorText}`
+        errorMessage = errorData.message || errorData.error || `API error: ${response.status}`
+      } catch {
+        errorMessage = `API error: ${response.status} - ${errorText.slice(0, 100)}`
       }
-      throw new Error(errorMessage)
+
+      return NextResponse.json(
+        { success: false, message: errorMessage },
+        { status: response.status }
+      )
     }
 
-    const responseData = await response.json()
-    console.warn('API Success Response:', {
-      status: response.status,
-      headers: Object.fromEntries(response.headers.entries()),
-      data: responseData
-    })
+    // Parse successful response
+    let responseData: any
+    try {
+      responseData = await response.json()
+    } catch (error) {
+      console.error('Failed to parse API response:', error)
+      return NextResponse.json(
+        { success: false, message: 'Invalid response from API' },
+        { status: 500 }
+      )
+    }
 
+    // Extract image URL
     const imageUrl = responseData.data?.[0]?.url || 
                     responseData.data?.data?.[0]?.url ||
                     responseData.data?.data?.[0]?.b64_json
 
     if (!imageUrl) {
-      console.error('Invalid API response structure:', JSON.stringify(responseData, null, 2))
-      throw new Error('No image URL in API response')
+      console.error('Invalid API response structure:', responseData)
+      return NextResponse.json(
+        { success: false, message: 'No image URL in API response' },
+        { status: 500 }
+      )
     }
 
-    console.warn('Successfully generated image:', { imageUrl })
-
-    return NextResponse.json({ 
+    return NextResponse.json({
       success: true,
       imageUrl,
       message: 'Image generated successfully'
     })
-  } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred'
-    const errorDetails = error instanceof Error ? {
-      name: error.name,
-      message: error.message,
-      stack: error.stack,
-      cause: error.cause
-    } : { error }
 
-    console.error('Error in image generation:', errorDetails)
-    
+  } catch (error) {
+    console.error('Unhandled error:', error)
     return NextResponse.json(
       { 
-        success: false,
-        message: errorMessage,
-        error: error instanceof Error ? error.stack : 'Unknown error'
+        success: false, 
+        message: error instanceof Error ? error.message : 'An unexpected error occurred'
       },
       { status: 500 }
     )
