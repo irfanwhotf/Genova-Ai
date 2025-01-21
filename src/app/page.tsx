@@ -69,8 +69,8 @@ export default function Home() {
       let data
       try {
         data = JSON.parse(responseText)
-      } catch (e) {
-        console.error('Failed to parse response:', responseText)
+      } catch (parseError) {
+        console.error('Failed to parse response:', responseText, parseError)
         throw new Error('Invalid response from server')
       }
 
