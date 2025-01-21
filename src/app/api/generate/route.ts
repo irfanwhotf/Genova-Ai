@@ -1,5 +1,17 @@
 import { NextResponse } from 'next/server'
 
+interface ApiResponse {
+  data?: Array<{
+    url?: string
+    b64_json?: string
+  }> | {
+    data?: Array<{
+      url?: string
+      b64_json?: string
+    }>
+  }
+}
+
 export async function POST(request: Request) {
   try {
     // Validate environment variables first
@@ -22,7 +34,7 @@ export async function POST(request: Request) {
     try {
       const body = await request.json()
       prompt = body.prompt?.trim()
-    } catch (error) {
+    } catch (_parseError) {
       return NextResponse.json(
         { success: false, message: 'Invalid request body' },
         { status: 400 }
@@ -81,11 +93,11 @@ export async function POST(request: Request) {
     }
 
     // Parse successful response
-    let responseData: any
+    let responseData: ApiResponse
     try {
       responseData = await response.json()
-    } catch (error) {
-      console.error('Failed to parse API response:', error)
+    } catch (_jsonError) {
+      console.error('Failed to parse API response')
       return NextResponse.json(
         { success: false, message: 'Invalid response from API' },
         { status: 500 }
