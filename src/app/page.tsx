@@ -106,26 +106,6 @@ export default function Home() {
     }
   }
 
-  const downloadImage = async () => {
-    if (!imageUrl) return
-    
-    try {
-      const response = await fetch(imageUrl)
-      const blob = await response.blob()
-      const url = window.URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `genova-ai-${Date.now()}.png`
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-      window.URL.revokeObjectURL(url)
-    } catch (error) {
-      console.error('Error downloading image:', error)
-      setError('Failed to download image')
-    }
-  }
-
   return (
     <>
       <Navbar />
