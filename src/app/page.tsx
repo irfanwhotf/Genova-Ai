@@ -43,7 +43,7 @@ const Footer = () => (
 export default function Home() {
   const [prompt, setPrompt] = useState('')
   const [model, setModel] = useState('Flux-Dev')
-  const [imageUrl, setImageUrl] = useState('')
+  const [imageUrl, setImageUrl] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -220,43 +220,32 @@ export default function Home() {
                   {loading ? 'Generating...' : 'Generate Image'}
                 </button>
 
-                {/* Result Section */}
-                {imageUrl && (
-                  <div className="mt-8 space-y-4">
-                    <div className="relative aspect-square max-w-2xl mx-auto border-2 border-gray-700 rounded-lg overflow-hidden">
+                {/* Image Display Section */}
+                <div className="mt-8 flex justify-center">
+                  {loading ? (
+                    <div className="flex flex-col items-center">
+                      <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500"></div>
+                      <p className="mt-4 text-lg text-gray-300">Generating your image...</p>
+                    </div>
+                  ) : imageUrl ? (
+                    <div className="relative group">
                       <Image
                         src={imageUrl}
-                        alt={prompt}
-                        fill
-                        className="object-contain"
-                        unoptimized
-                        onError={(e) => {
-                          console.error('Image loading error:', e)
-                          setError('Failed to load the generated image')
-                        }}
+                        alt="Generated image"
+                        width={512}
+                        height={512}
+                        className="rounded-lg shadow-2xl transition-all duration-300 group-hover:shadow-blue-500/25"
+                        priority
                       />
-                    </div>
-                    <div className="flex justify-center gap-4">
                       <button
-                        onClick={downloadImage}
-                        className="px-6 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-white font-medium transition-colors"
+                        onClick={() => window.open(imageUrl, '_blank')}
+                        className="absolute bottom-4 right-4 bg-blue-500 text-white px-4 py-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300"
                       >
-                        Download Image
+                        View Full Size
                       </button>
-                      <a
-                        href={imageUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="px-6 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-white font-medium transition-colors"
-                      >
-                        Open in New Tab
-                      </a>
                     </div>
-                    <p className="text-center text-gray-400 mt-4">
-                      Prompt: {prompt}
-                    </p>
-                  </div>
-                )}
+                  ) : null}
+                </div>
               </div>
             </div>
           </div>
