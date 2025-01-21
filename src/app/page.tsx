@@ -56,6 +56,9 @@ export default function Home() {
     try {
       setLoading(true)
       setError(null)
+      setImageUrl(null)
+
+      console.log('Starting image generation with prompt:', prompt)
 
       const response = await fetch('/api/generate', {
         method: 'POST',
@@ -65,10 +68,19 @@ export default function Home() {
         body: JSON.stringify({ prompt }),
       })
 
+      console.log('Received response:', {
+        status: response.status,
+        ok: response.ok,
+        headers: Object.fromEntries(response.headers.entries())
+      })
+
       const responseText = await response.text()
+      console.log('Response text:', responseText)
+
       let data
       try {
         data = JSON.parse(responseText)
+        console.log('Parsed response data:', data)
       } catch (parseError) {
         console.error('Failed to parse response:', responseText, parseError)
         throw new Error('Invalid response from server')
@@ -79,13 +91,16 @@ export default function Home() {
       }
 
       if (!data.imageUrl) {
+        console.error('Missing image URL in response:', data)
         throw new Error('No image URL in response')
       }
 
+      console.log('Successfully received image URL:', data.imageUrl)
       setImageUrl(data.imageUrl)
     } catch (error) {
       console.error('Error generating image:', error)
       setError(error instanceof Error ? error.message : 'Failed to generate image')
+      setImageUrl(null)
     } finally {
       setLoading(false)
     }
@@ -115,14 +130,24 @@ export default function Home() {
     <>
       <Navbar />
       {error && (
-        <div className="fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg animate-fade-in">
-          {error}
+        <div className="p-4 mb-4 text-sm text-red-800 bg-red-100 rounded-lg dark:bg-red-200 dark:text-red-800 relative">
           <button
             onClick={() => setError(null)}
-            className="ml-3 text-white hover:text-gray-200 focus:outline-none"
+            className="absolute top-2 right-2 text-red-600 hover:text-red-800"
           >
-            ✕
+            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path
+                fillRule="evenodd"
+                d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                clipRule="evenodd"
+              />
+            </svg>
           </button>
+          <div className="font-medium">Error generating image:</div>
+          <div className="mt-1">{error}</div>
+          <div className="mt-2 text-xs">
+            Please check the browser console for more details.
+          </div>
         </div>
       )}
       <main className="min-h-screen pt-16">
