@@ -45,7 +45,7 @@ export default function Home() {
   const [model, setModel] = useState('Flux-Dev')
   const [imageUrl, setImageUrl] = useState('')
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
+  const [error, setError] = useState(null)
 
   const generateImage = async () => {
     if (!prompt.trim()) {
@@ -53,37 +53,28 @@ export default function Home() {
       return
     }
 
-    setLoading(true)
-    setError('')
-
     try {
-      console.log('Sending request with prompt:', prompt)
+      setLoading(true)
+      setError(null)
+
       const response = await fetch('/api/generate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ 
-          prompt: prompt.trim(),
-          model: 'Flux-Dev'
-        }),
+        body: JSON.stringify({ prompt }),
       })
 
       const data = await response.json()
-      console.log('Response received:', data)
 
       if (!response.ok) {
         throw new Error(data.message || 'Failed to generate image')
       }
 
-      if (!data.imageUrl) {
-        throw new Error('No image URL received from the API')
-      }
-
       setImageUrl(data.imageUrl)
-    } catch (err) {
-      console.error('Error in generateImage:', err)
-      setError(err instanceof Error ? err.message : 'Failed to generate image')
+    } catch (error) {
+      console.error('Error generating image:', error)
+      setError(error instanceof Error ? error.message : 'Failed to generate image')
     } finally {
       setLoading(false)
     }
