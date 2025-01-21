@@ -57,7 +57,7 @@ export default function Home() {
       setLoading(true)
       setError(null)
 
-      const response = await fetch('/api/generate', {
+      const response = await fetch('/api/v1/generate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
