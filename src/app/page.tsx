@@ -57,6 +57,8 @@ export default function Home() {
         return
       }
 
+      console.log('Sending request to API with prompt:', prompt.trim())
+      
       const response = await fetch('/api/generate', {
         method: 'POST',
         headers: {
@@ -65,13 +67,22 @@ export default function Home() {
         body: JSON.stringify({ prompt: prompt.trim() }),
       })
 
+      console.log('API Response:', {
+        status: response.status,
+        statusText: response.statusText,
+        headers: Object.fromEntries(response.headers.entries())
+      })
+
       const contentType = response.headers.get('content-type')
       if (!contentType?.includes('application/json')) {
         console.error('Invalid content type:', contentType)
-        throw new Error('Server returned an invalid response')
+        const text = await response.text()
+        console.error('Response text:', text)
+        throw new Error(`Server returned invalid content type: ${contentType}. Response: ${text.slice(0, 100)}`)
       }
 
       const data = await response.json()
+      console.log('API Response data:', data)
       
       if (!data.success) {
         throw new Error(data.message || 'Failed to generate image')

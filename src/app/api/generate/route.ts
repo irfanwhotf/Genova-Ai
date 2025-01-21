@@ -15,6 +15,9 @@ interface ApiResponse {
 
 export async function POST(request: Request) {
   try {
+    // Log request headers
+    console.log('API Request Headers:', Object.fromEntries(request.headers.entries()))
+
     // Validate environment variables first
     const apiKey = process.env.NEXT_PUBLIC_API_KEY
     const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL
@@ -32,10 +35,13 @@ export async function POST(request: Request) {
 
     // Parse request body
     let prompt: string
+    let body: any
     try {
-      const body = await request.json()
+      body = await request.json()
+      console.log('Request body:', body)
       prompt = body.prompt?.trim()
     } catch (_parseError) {
+      console.error('Failed to parse request body')
       return NextResponse.json(
         { success: false, message: 'Invalid request body' },
         { status: 400 }
@@ -43,15 +49,17 @@ export async function POST(request: Request) {
     }
 
     if (!prompt) {
+      console.error('Missing prompt in request:', body)
       return NextResponse.json(
         { success: false, message: 'Prompt is required' },
         { status: 400 }
       )
     }
 
-    console.warn('Making API request:', {
+    console.log('Making API request:', {
       url: `${baseUrl}/images/generations`,
-      prompt
+      prompt,
+      apiKeyLength: apiKey.length
     })
 
     // Make API request
@@ -68,6 +76,12 @@ export async function POST(request: Request) {
         size: '512x512',
         response_format: 'url'
       }),
+    })
+
+    console.log('External API Response:', {
+      status: response.status,
+      statusText: response.statusText,
+      headers: Object.fromEntries(response.headers.entries())
     })
 
     // Handle non-OK responses
@@ -95,10 +109,14 @@ export async function POST(request: Request) {
 
     // Parse successful response
     let responseData: ApiResponse
+    let responseText: string
     try {
-      responseData = await response.json()
+      responseText = await response.text()
+      console.log('Raw API response:', responseText)
+      responseData = JSON.parse(responseText)
+      console.log('Parsed API response:', responseData)
     } catch (_jsonError) {
-      console.error('Failed to parse API response')
+      console.error('Failed to parse API response:', responseText)
       return NextResponse.json(
         { success: false, message: 'Invalid response from API' },
         { status: 500 }
@@ -122,6 +140,7 @@ export async function POST(request: Request) {
       )
     }
 
+    console.log('Successfully generated image URL:', imageUrl)
     return NextResponse.json({
       success: true,
       imageUrl,
