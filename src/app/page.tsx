@@ -45,7 +45,7 @@ export default function Home() {
   const [model, setModel] = useState('Flux-Dev')
   const [imageUrl, setImageUrl] = useState('')
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(null)
+  const [error, setError] = useState<string | null>(null)
 
   const generateImage = async () => {
     if (!prompt.trim()) {
@@ -103,6 +103,17 @@ export default function Home() {
   return (
     <>
       <Navbar />
+      {error && (
+        <div className="fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg animate-fade-in">
+          {error}
+          <button
+            onClick={() => setError(null)}
+            className="ml-3 text-white hover:text-gray-200 focus:outline-none"
+          >
+            ✕
+          </button>
+        </div>
+      )}
       <main className="min-h-screen pt-16">
         {/* Hero Section */}
         <div className="relative bg-gray-900 overflow-hidden">
@@ -173,48 +184,44 @@ export default function Home() {
                   {loading ? 'Generating...' : 'Generate Image'}
                 </button>
 
-                {error && (
-                  <p className="text-red-400 text-center">{error}</p>
+                {/* Result Section */}
+                {imageUrl && (
+                  <div className="mt-8 space-y-4">
+                    <div className="relative aspect-square max-w-2xl mx-auto border-2 border-gray-700 rounded-lg overflow-hidden">
+                      <Image
+                        src={imageUrl}
+                        alt={prompt}
+                        fill
+                        className="object-contain"
+                        unoptimized
+                        onError={(e) => {
+                          console.error('Image loading error:', e)
+                          setError('Failed to load the generated image')
+                        }}
+                      />
+                    </div>
+                    <div className="flex justify-center gap-4">
+                      <button
+                        onClick={downloadImage}
+                        className="px-6 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-white font-medium transition-colors"
+                      >
+                        Download Image
+                      </button>
+                      <a
+                        href={imageUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-6 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-white font-medium transition-colors"
+                      >
+                        Open in New Tab
+                      </a>
+                    </div>
+                    <p className="text-center text-gray-400 mt-4">
+                      Prompt: {prompt}
+                    </p>
+                  </div>
                 )}
               </div>
-
-              {/* Result Section */}
-              {imageUrl && (
-                <div className="mt-8 space-y-4">
-                  <div className="relative aspect-square max-w-2xl mx-auto border-2 border-gray-700 rounded-lg overflow-hidden">
-                    <Image
-                      src={imageUrl}
-                      alt={prompt}
-                      fill
-                      className="object-contain"
-                      unoptimized
-                      onError={(e) => {
-                        console.error('Image loading error:', e)
-                        setError('Failed to load the generated image')
-                      }}
-                    />
-                  </div>
-                  <div className="flex justify-center gap-4">
-                    <button
-                      onClick={downloadImage}
-                      className="px-6 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-white font-medium transition-colors"
-                    >
-                      Download Image
-                    </button>
-                    <a
-                      href={imageUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="px-6 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-white font-medium transition-colors"
-                    >
-                      Open in New Tab
-                    </a>
-                  </div>
-                  <p className="text-center text-gray-400 mt-4">
-                    Prompt: {prompt}
-                  </p>
-                </div>
-              )}
             </div>
           </div>
         </div>
