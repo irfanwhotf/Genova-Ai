@@ -18,6 +18,12 @@ const nextConfig = {
     unoptimized: true,
   },
   output: 'standalone',
+  distDir: '.next',
+  // Cloudflare Pages specific configuration
+  experimental: {
+    isrMemoryCacheSize: 0,
+    serverActions: true,
+  },
 }
 
 module.exports = nextConfig
