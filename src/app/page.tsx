@@ -53,7 +53,7 @@ export default function Home() {
       setError(null)
       setImageUrl(null)
 
-      console.log('Starting image generation with prompt:', prompt)
+      console.warn('Starting image generation with prompt:', prompt)
 
       const response = await fetch('/api/generate', {
         method: 'POST',
@@ -63,16 +63,16 @@ export default function Home() {
         body: JSON.stringify({ prompt }),
       })
 
-      console.log('Response status:', response.status)
-      console.log('Response headers:', Object.fromEntries(response.headers.entries()))
+      console.warn('Response status:', response.status)
+      console.warn('Response headers:', Object.fromEntries(response.headers.entries()))
 
       const responseText = await response.text()
-      console.log('Raw response:', responseText)
+      console.warn('Raw response:', responseText)
 
       let data
       try {
         data = JSON.parse(responseText)
-        console.log('Parsed response:', data)
+        console.warn('Parsed response:', data)
       } catch (parseError) {
         console.error('Failed to parse response:', {
           text: responseText,
@@ -94,7 +94,7 @@ export default function Home() {
         throw new Error('No image URL in response')
       }
 
-      console.log('Setting image URL:', data.imageUrl)
+      console.warn('Setting image URL:', data.imageUrl)
       setImageUrl(data.imageUrl)
     } catch (error) {
       console.error('Error details:', {

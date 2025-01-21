@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 
 export async function POST(request: Request) {
-  console.log('API Route Environment:', {
+  console.warn('API Route Environment:', {
     nodeEnv: process.env.NODE_ENV,
     hasApiKey: !!process.env.NEXT_PUBLIC_API_KEY,
     hasBaseUrl: !!process.env.NEXT_PUBLIC_API_BASE_URL,
@@ -39,7 +39,7 @@ export async function POST(request: Request) {
       response_format: 'url'
     }
 
-    console.log('Making API request:', {
+    console.warn('Making API request:', {
       url: `${baseUrl}/images/generations`,
       prompt: requestBody.prompt,
       model: requestBody.model
@@ -72,14 +72,14 @@ export async function POST(request: Request) {
       try {
         const errorData = JSON.parse(errorText)
         errorMessage = errorData.message || errorData.error || `API responded with status ${response.status}`
-      } catch (e) {
+      } catch (_parseError) {
         errorMessage = `API error: ${errorText}`
       }
       throw new Error(errorMessage)
     }
 
     const responseData = await response.json()
-    console.log('API Success Response:', {
+    console.warn('API Success Response:', {
       status: response.status,
       headers: Object.fromEntries(response.headers.entries()),
       data: responseData
@@ -94,7 +94,7 @@ export async function POST(request: Request) {
       throw new Error('No image URL in API response')
     }
 
-    console.log('Successfully generated image:', { imageUrl })
+    console.warn('Successfully generated image:', { imageUrl })
 
     return NextResponse.json({ 
       success: true,
