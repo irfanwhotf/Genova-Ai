@@ -94,7 +94,8 @@ export default function Home() {
       a.click()
       document.body.removeChild(a)
       window.URL.revokeObjectURL(url)
-    } catch (err) {
+    } catch (error) {
+      console.error('Error downloading image:', error)
       setError('Failed to download image')
     }
   }
