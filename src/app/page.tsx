@@ -73,12 +73,13 @@ export default function Home() {
       try {
         data = JSON.parse(responseText)
         console.warn('Parsed response:', data)
-      } catch (parseError) {
+      } catch (parseError: unknown) {
+        const errorMessage = parseError instanceof Error ? parseError.message : 'Unknown parse error'
         console.error('Failed to parse response:', {
           text: responseText,
-          error: parseError
+          error: errorMessage
         })
-        throw new Error(`Invalid response from server: ${parseError.message}`)
+        throw new Error(`Invalid response from server: ${errorMessage}`)
       }
 
       if (!response.ok || !data.success) {
@@ -96,12 +97,14 @@ export default function Home() {
 
       console.warn('Setting image URL:', data.imageUrl)
       setImageUrl(data.imageUrl)
-    } catch (error) {
-      console.error('Error details:', {
+    } catch (error: unknown) {
+      const errorDetails = error instanceof Error ? {
         name: error.name,
         message: error.message,
         stack: error.stack
-      })
+      } : { error }
+
+      console.error('Error details:', errorDetails)
       setError(error instanceof Error ? error.message : 'Failed to generate image')
       setImageUrl(null)
     } finally {

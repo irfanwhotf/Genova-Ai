@@ -52,13 +52,17 @@ export async function POST(request: Request) {
         'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify(requestBody),
-    }).catch(error => {
-      console.error('Fetch error:', {
-        message: error.message,
-        cause: error.cause,
-        stack: error.stack
-      })
-      throw error
+    }).catch((fetchError: unknown) => {
+      if (fetchError instanceof Error) {
+        console.error('Fetch error:', {
+          message: fetchError.message,
+          cause: fetchError.cause,
+          stack: fetchError.stack
+        })
+      } else {
+        console.error('Unknown fetch error:', fetchError)
+      }
+      throw fetchError
     })
 
     if (!response.ok) {
@@ -101,19 +105,22 @@ export async function POST(request: Request) {
       imageUrl,
       message: 'Image generated successfully'
     })
-  } catch (error) {
-    console.error('Error in image generation:', {
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred'
+    const errorDetails = error instanceof Error ? {
       name: error.name,
       message: error.message,
       stack: error.stack,
       cause: error.cause
-    })
+    } : { error }
+
+    console.error('Error in image generation:', errorDetails)
     
     return NextResponse.json(
       { 
         success: false,
-        message: error.message || 'Failed to generate image',
-        error: error.stack || 'Unknown error'
+        message: errorMessage,
+        error: error instanceof Error ? error.stack : 'Unknown error'
       },
       { status: 500 }
     )
