@@ -6,7 +6,7 @@ export async function POST(request: Request) {
 
     if (!prompt) {
       return NextResponse.json(
-        { message: 'Prompt is required' },
+        { success: false, message: 'Prompt is required' },
         { status: 400 }
       )
     }
@@ -38,34 +38,40 @@ export async function POST(request: Request) {
       }),
     })
 
+    if (!response.ok) {
+      const errorData = await response.json()
+      throw new Error(errorData.message || errorData.error || `API responded with status ${response.status}`)
+    }
+
     const responseData = await response.json()
     console.log('API Response:', {
       status: response.status,
       data: responseData,
-      fullData: JSON.stringify(responseData, null, 2)
     })
-
-    if (!response.ok) {
-      throw new Error(responseData.message || responseData.error || 'Failed to generate image')
-    }
 
     // Extract image URL from the nested response structure
     const imageUrl = responseData.data?.[0]?.url || 
                     responseData.data?.data?.[0]?.url ||
                     responseData.data?.data?.[0]?.b64_json
 
-    console.log('Extracted image URL:', imageUrl)
-
     if (!imageUrl) {
       console.error('Response structure:', JSON.stringify(responseData, null, 2))
       throw new Error('No image URL in API response')
     }
 
-    return NextResponse.json({ imageUrl })
+    return NextResponse.json({ 
+      success: true,
+      imageUrl,
+      message: 'Image generated successfully'
+    })
   } catch (error) {
     console.error('Error details:', error)
     return NextResponse.json(
-      { message: error instanceof Error ? error.message : 'Failed to generate image' },
+      { 
+        success: false,
+        message: error instanceof Error ? error.message : 'Failed to generate image',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
     )
   }

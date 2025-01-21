@@ -57,7 +57,7 @@ export default function Home() {
       setLoading(true)
       setError(null)
 
-      const response = await fetch('/api/v1/generate', {
+      const response = await fetch('/api/generate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -65,10 +65,21 @@ export default function Home() {
         body: JSON.stringify({ prompt }),
       })
 
-      const data = await response.json()
+      const responseText = await response.text()
+      let data
+      try {
+        data = JSON.parse(responseText)
+      } catch (e) {
+        console.error('Failed to parse response:', responseText)
+        throw new Error('Invalid response from server')
+      }
 
-      if (!response.ok) {
+      if (!response.ok || !data.success) {
         throw new Error(data.message || 'Failed to generate image')
+      }
+
+      if (!data.imageUrl) {
+        throw new Error('No image URL in response')
       }
 
       setImageUrl(data.imageUrl)
