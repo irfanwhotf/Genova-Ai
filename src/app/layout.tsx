@@ -1,26 +1,26 @@
-import type { Metadata } from "next";
-import { Inter } from "next/font/google";
-import "./globals.css";
+import type { Metadata } from 'next'
+import { Inter } from 'next/font/google'
+import './globals.css'
+import { Analytics } from '@vercel/analytics/react'
 
-const inter = Inter({
-  subsets: ["latin"],
-});
+const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: "GenovaAI - AI Image Generation",
-  description: "Transform your ideas into stunning images with AI using GenovaAI",
-};
+  title: 'GenovaAI - AI Image Generator',
+  description: 'Create stunning AI-generated images with GenovaAI',
+}
 
 export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode;
+  children: React.ReactNode
 }) {
   return (
-    <html lang="en" className="scroll-smooth">
-      <body className={`${inter.className} bg-gray-900 text-white antialiased`}>
+    <html lang="en">
+      <body className={inter.className}>
         {children}
+        <Analytics />
       </body>
     </html>
-  );
+  )
 }
