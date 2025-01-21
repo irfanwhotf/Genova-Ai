@@ -57,7 +57,7 @@ export default function Home() {
         return
       }
 
-      console.log('Sending request to API with prompt:', prompt.trim())
+      console.warn('Sending request to API with prompt:', prompt.trim())
       
       const response = await fetch('/api/generate', {
         method: 'POST',
@@ -67,7 +67,7 @@ export default function Home() {
         body: JSON.stringify({ prompt: prompt.trim() }),
       })
 
-      console.log('API Response:', {
+      console.warn('API Response:', {
         status: response.status,
         statusText: response.statusText,
         headers: Object.fromEntries(response.headers.entries())
@@ -82,7 +82,7 @@ export default function Home() {
       }
 
       const data = await response.json()
-      console.log('API Response data:', data)
+      console.warn('API Response data:', data)
       
       if (!data.success) {
         throw new Error(data.message || 'Failed to generate image')
