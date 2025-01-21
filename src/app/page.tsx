@@ -42,9 +42,8 @@ const Footer = () => (
 
 export default function Home() {
   const [prompt, setPrompt] = useState('')
-  const [model, setModel] = useState('Flux-Dev')
-  const [imageUrl, setImageUrl] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [imageUrl, setImageUrl] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   const generateImage = async () => {
